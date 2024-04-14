@@ -13,7 +13,7 @@ public class MainPageController {
         this.mainService = mainService;
     }
 
-    @GetMapping("/healthCheck")
+    @GetMapping("/healthcheck")
     public String healthCheck(){
         return "Health";
     }
