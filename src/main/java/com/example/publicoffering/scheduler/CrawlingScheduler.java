@@ -7,7 +7,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,8 +27,7 @@ class PublicOffer {
 @Component
 public class CrawlingScheduler {
 
-
-    @Scheduled(cron = "1 * * * * *")
+    @Scheduled(cron = "0 0 8 * * *")
     public void method() {
         List<PublicOffer> publicOfferList = Crawling();
         if (publicOfferList != null) {
@@ -68,12 +66,12 @@ public class CrawlingScheduler {
                 publicOffer.setLeadManager(cells.get(9).text());
                 publicOfferList.add(publicOffer);
             }
+
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
         return publicOfferList;
     }
-
     private void sendMsg(List<PublicOffer> publicOfferList) {
         for (PublicOffer po : publicOfferList) {
             System.out.println(po);
