@@ -11,18 +11,16 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Data
 class PublicOffer {
-    String scheduleDate;
     String itemName;
-    String desiredPrice;
     String offeringPrice;
-    String offeringAmount;
-    String refundDate;
-    String listDate;
-    String competitionRatio;
     String leadManager;
+    String sector;
+    String scheduledDate;
+    String listingDate;
 }
 
 @Data
@@ -42,9 +40,7 @@ public class CrawlingScheduler {
     @Scheduled(cron = "1 * * * * *")
     public void method() {
         PublicOfferLists publicOfferLists = Crawling();
-        if (publicOfferLists != null) {
-            sendMsg(publicOfferLists);
-        }
+        sendMsg(publicOfferLists);
     }
 
     private PublicOfferLists Crawling() {
@@ -53,9 +49,9 @@ public class CrawlingScheduler {
 
         try {
             //Crawling!
-            String publicOfferingUrl = "http://www.ipostock.co.kr/sub03/ipo04.asp";
+            String publicOfferingUrl = "https://finance.naver.com/sise/ipo.naver";
             Document doc = Jsoup.connect(publicOfferingUrl).get();
-            Element tableElement = doc.selectXpath("//*[@id='print']/table[1]/tbody/tr[4]/td/table/tbody/tr[4]/td/table").first();
+            Element tableElement = doc.selectXpath("//*[@id=\"contentarea\"]/div[2]/table/tbody").first();
 
             if (tableElement == null) {
                 throw new NullPointerException("크롤링 결과 없음");
@@ -65,20 +61,22 @@ public class CrawlingScheduler {
             Elements rows = tableElement.select("tr");
 
             for (Element row : rows) {
-                Elements cells = row.select("td");
-                if (cells.size() <= 1) {
+                Element date = row.select("li.area_private span.num").first();
+                if(date == null){
                     continue;
                 }
-
-                String date = cells.get(1).text().split("~")[0].trim();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM.dd");
-                LocalDate givenDate = LocalDate.parse(date + "." + today.getYear(), DateTimeFormatter.ofPattern("MM.dd.yyyy"));
-                
+                String dateStr = date.text().split("~")[0].trim();
+                LocalDate givenDate = LocalDate.parse(dateStr,DateTimeFormatter.ofPattern("yy.MM.dd"));
+                System.out.println("givenDate = " + givenDate);
+                System.out.println("today = " + today);
                 if (givenDate.equals(today)){
-                    publicOfferOneDay.add(getOfferFromCells(cells));
+                    publicOfferOneDay.add(getOfferFromRow(row));
                 }
                 else if(givenDate.equals(today.plusDays(3))){
-                    publicOfferThreeDay.add(getOfferFromCells(cells));
+                    publicOfferThreeDay.add(getOfferFromRow(row));
+                }
+                else if(givenDate.equals(today.plusDays(4))){
+                    break;
                 }
             }
         } catch (Exception e) {
@@ -86,8 +84,18 @@ public class CrawlingScheduler {
         }
         return new PublicOfferLists(publicOfferOneDay, publicOfferThreeDay);
     }
+    private PublicOffer getOfferFromRow(Element row){
+        PublicOffer publicOffer = new PublicOffer();
+        publicOffer.setItemName(Objects.requireNonNull(row.select("h4.item_name").first()).text().trim());
+        publicOffer.setOfferingPrice(Objects.requireNonNull(row.select("li.area_price span.num").first()).text().trim());
+        publicOffer.setLeadManager(Objects.requireNonNull(row.select("li.area_sup").first()).text().trim());
+        publicOffer.setSector(Objects.requireNonNull(row.select("li.area_type").first()).text().trim());
+        publicOffer.setScheduledDate(Objects.requireNonNull(row.select("li.area_private span.num").first()).text().trim());
+        publicOffer.setListingDate(Objects.requireNonNull(row.select("li.area_list span.num").first()).text().trim());
+        return publicOffer;
+    }
+
     private void sendMsg(PublicOfferLists publicOfferLists) {
-        System.out.println("hi");
 
         for(PublicOffer publicOffer : publicOfferLists.getListThreeDay()){
             System.out.println("publicOffer = " + publicOffer);
@@ -95,19 +103,5 @@ public class CrawlingScheduler {
         for (PublicOffer publicOffer: publicOfferLists.getListOneDay()){
             System.out.println("publicOffer = " + publicOffer);
         }
-    }
-
-    private PublicOffer getOfferFromCells(Elements cells){
-        PublicOffer publicOffer = new PublicOffer();
-        publicOffer.setScheduleDate(cells.get(1).text());
-        publicOffer.setItemName(cells.get(2).text());
-        publicOffer.setDesiredPrice(cells.get(3).text());
-        publicOffer.setOfferingPrice(cells.get(4).text());
-        publicOffer.setOfferingAmount(cells.get(5).text());
-        publicOffer.setRefundDate(cells.get(6).text());
-        publicOffer.setListDate(cells.get(7).text());
-        publicOffer.setCompetitionRatio(cells.get(8).text());
-        publicOffer.setLeadManager(cells.get(9).text());
-        return publicOffer;
     }
 }
