@@ -1,6 +1,7 @@
 package com.example.publicoffering.scheduler;
 
-import lombok.Data;
+import com.example.publicoffering.model.PublicOffer;
+import com.example.publicoffering.model.PublicOfferLists;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -12,27 +13,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-@Data
-class PublicOffer {
-    String itemName;
-    String offeringPrice;
-    String leadManager;
-    String sector;
-    String scheduledDate;
-    String listingDate;
-}
-
-@Data
-class PublicOfferLists{
-    private List<PublicOffer> listOneDay;
-    private List<PublicOffer> listThreeDay;
-
-    public PublicOfferLists(List<PublicOffer> publicOfferOneDay, List<PublicOffer> publicOfferThreeDay) {
-        listOneDay = publicOfferOneDay;
-        listThreeDay = publicOfferThreeDay;
-    }
-}
 
 @Component
 public class CrawlingScheduler {
@@ -48,7 +28,6 @@ public class CrawlingScheduler {
         List<PublicOffer> publicOfferThreeDay = new ArrayList<>();
 
         try {
-            //Crawling!
             String publicOfferingUrl = "https://finance.naver.com/sise/ipo.naver";
             Document doc = Jsoup.connect(publicOfferingUrl).get();
             Element tableElement = doc.selectXpath("//*[@id=\"contentarea\"]/div[2]/table/tbody").first();
@@ -96,7 +75,6 @@ public class CrawlingScheduler {
     }
 
     private void sendMsg(PublicOfferLists publicOfferLists) {
-
         for(PublicOffer publicOffer : publicOfferLists.getListThreeDay()){
             System.out.println("publicOffer = " + publicOffer);
         }
